@@ -41,43 +41,117 @@
                  data-separator="==="
                  data-vertical="---"><script type="text/template">
 
-# CSS Animations
-
-[Markdown cheatsheet](https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet)
-
+# Oooh pretty ...
+<br>
+**CSS transitions and animations**
 
 ===
 
-## Samples
+**New CSS properties introduced in CSS3**
+
+<br>
+
+> CSS Transitions allows property changes in CSS values to occur smoothly over a specified duration.
+
+<br>
+
+> CSS Animations [are] a way [...] to animate the values of CSS properties over time, using keyframes.
+
+===
+
+## How it works
 
 ---
 
-### Mix HTML and markdown
+### Transitions
 
- * HTML tags ! <strong>Hello</strong> <small>World</small>
- * **Kittens!** 
-
-<img src="http://placekitten.com/g/400/240"/>
-
----
-
-### Syntax highlighting
-
-```ruby
-def initialize(app, options={})
-  @app = app
-  @urls = options[:urls] || ["/favicon.ico"]
-  @index = options[:index]
-  root = options[:root] || Dir.pwd
-
-  # HTTP Headers
-  @header_rules = options[:header_rules] || []
-  # Allow for legacy :cache_control option while prioritizing global header_rules setting
-  @header_rules.insert(0, [:all, {'Cache-Control' => options[:cache_control]}]) if options[:cache_control]
-
-  @file_server = Rack::File.new(root)
-end
+```css
+code{
+  goes: here;
+}
 ```
+
+<iframe>
+</iframe>
+
+---
+
+### Animations
+
+```css
+code{
+  goes: here;
+}
+```
+
+<iframe>
+</iframe>
+
+=== 
+
+### Animations ? 
+
+ * Transitions vs animations
+
+===
+
+## When to use it
+
+ * Graceful degradation
+
+ * Support
+
+ * Mobile perf
+
+ * Semantically logical (part of display)
+
+ * (js animations)
+
+=== 
+
+## Tools and tricks for better animations
+
+ * Browser rendering (reflow / repaint / composite)
+
+ * Easings
+
+ * Compass rules
+
+ * Material design
+
+=== 
+
+## Tools
+
+ * Sass
+
+ * Easings
+
+ * Material design
+
+===
+
+## Examples
+ 
+ * Hover states
+
+ * Spinners
+
+ * UX - bring focus to an  element
+
+ * 3D transfrom tricks
+
+ * SVBTLE like button
+
+===
+
+## Resources
+
+ * [MDN guide](https://developer.mozilla.org/en-US/docs/Web/Guide/CSS/Using_CSS_transitions)
+
+ * [W3 Reference] (http://www.w3.org/TR/css3-transitions/)
+
+ *
 
         </script></section>
 

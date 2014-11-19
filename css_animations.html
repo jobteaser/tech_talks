@@ -18,6 +18,9 @@
     <!-- For syntax highlighting -->
     <link rel="stylesheet" href="lib/reveal.js/lib/css/zenburn.css">
 
+    <!-- Talk-specific styles -->
+    <link rel="stylesheet" href="css_animations/demos.css">
+
     <!-- If the query includes 'print-pdf', include the PDF print sheet -->
     <script>
       if( window.location.search.match( /print-pdf/gi ) ) {
@@ -66,15 +69,34 @@
 ### Transitions
 
 ```css
-code{
-  goes: here;
+.foo{
+  background-color: red;
+  transition: background-color 400ms linear;
+}
+
+.foo:hover{
+  background-color: blue;
 }
 ```
 
-<iframe>
-</iframe>
+<div class="demo" id="demo1">
+  <div class="box"></div>
+  <div class="box transition"></div>
+</div>
 
 ---
+
+`transition <property> <duration> <timing-function> <delay>`
+
+<br>
+
+ * **property** : `<css property>`, `all`
+
+ * **duration** : `2s`, `300ms`
+
+ * **timing-function** : `linear`, `ease`, `cubic-bezier()`
+
+--- 
 
 ### Animations
 
@@ -86,6 +108,10 @@ code{
 
 <iframe>
 </iframe>
+
+---
+
+**[transition|animation] <type> <duration> <easing>**
 
 === 
 

@@ -96,46 +96,73 @@
 
  * **timing-function** : `linear`, `ease`, `cubic-bezier()`
 
---- 
+ * **delay**: `300ms`, `none`
+
+---
 
 ### Animations
 
 ```css
-code{
-  goes: here;
+.wheel{
+  animation: colorwheel 5s infinite;
+}
+
+@keyframes colorwheel{
+  0%  { background: #FF4136; }
+  15% { background: #FF851B; }
+  30% { background: #FFDC00; }
+  45% { background: #2ECC40; }
+  60% { background: #0074D9; }
+  75% { background: #B10DC9; }
 }
 ```
 
-<iframe>
-</iframe>
+<div class="demo" id="demo2">
+  <div class="box" onclick='$(this).addClass("wheel");'></div>
+  <div class="box" onclick='$(this).addClass("wheel");'></div>
+  <div class="box" onclick='$(this).addClass("wheel");'></div>
+</div>
+
+--- 
+
+`animation <name> <duration> <timing-function> <infinite?> <reverse?>`
+
+* **keyframes** : `from` and `to`, or percent points
+
+=== 
+
+### Transitions or Animations ?
+
+ * Infinite? **animation**
+
+ * Should handle dynamic state? **transition**
+
+ * Need fine-grain control? **neither**
+   <div class="fragment"><small>Well, both, but with JS controls ^^</small></div>
 
 ---
 
-**[transition|animation] <type> <duration> <easing>**
+### Answer the question please
 
-=== 
-
-### Animations ? 
-
- * Transitions vs animations
+Just use **transitions** then. Less hassle overall.
 
 ===
 
-## When to use it
+## Why use it?
 
- * Graceful degradation
+ * Gracefully degrates on older browsers
 
- * Support
+ * Overall good support (IE 10+)
 
- * Mobile perf
+ * Performance friendly (mobile-notably)
 
- * Semantically logical (part of display)
+ * “Logically“ the best place to put it
 
- * (js animations)
+===
 
-=== 
+[WIP]
 
-## Tools and tricks for better animations
+## Tips and tricks
 
  * Browser rendering (reflow / repaint / composite)
 
@@ -145,15 +172,7 @@ code{
 
  * Material design
 
-=== 
-
-## Tools
-
- * Sass
-
- * Easings
-
- * Material design
+ * MDN reference
 
 ===
 
@@ -163,9 +182,9 @@ code{
 
  * Spinners
 
- * UX - bring focus to an  element
+ * UX - bring focus to an element
 
- * 3D transfrom tricks
+ * 3D transform tricks
 
  * SVBTLE like button
 
@@ -178,6 +197,16 @@ code{
  * [W3 Reference] (http://www.w3.org/TR/css3-transitions/)
 
  *
+
+===
+
+# TODO
+ - vendor prefixes
+ - 3d spins (new rubygems example)
+ - transition : no different easings / durations for different proerties of same element
+ - angular trick and start state
+ - example : codrops stuff
+ - example : switches (instead of radio)
 
         </script></section>
 

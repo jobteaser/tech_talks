@@ -25,3 +25,26 @@
 #demo1 .transition{
   transition: background-color 400ms linear;
 }
+
+
+/* DEMO 1 */
+#demo2 .box{
+  display: inline-block;
+  width: 50px;
+  height: 50px;
+  background-color: #DDD;
+  margin: 50px;
+}
+
+#demo2 .wheel{
+  -webkit-animation: colorwheel 5s infinite;
+}
+
+@-webkit-keyframes colorwheel{
+  0%  { background: #FF4136; }
+  15% { background: #FF851B; }
+  30% { background: #FFDC00; }
+  45% { background: #2ECC40; }
+  60% { background: #0074D9; }
+  75% { background: #B10DC9; }
+}

@@ -1,0 +1,354 @@
+<!doctype html>
+<html lang="en">
+
+  <head>
+    <meta charset="utf-8">
+
+    <title>CSS Animations</title>
+
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+    <link rel="stylesheet" href="lib/reveal.js/css/reveal.min.css">
+    <link rel="stylesheet" href="lib/reveal.js/css/theme/night.css">
+    <link rel="stylesheet" href="lib/template.css">
+
+    <!-- For syntax highlighting -->
+    <link rel="stylesheet" href="lib/reveal.js/lib/css/zenburn.css">
+
+    <!-- Talk-specific styles -->
+    <link rel="stylesheet" href="css_animations/demos.css">
+
+    <!-- If the query includes 'print-pdf', include the PDF print sheet -->
+    <script>
+      if( window.location.search.match( /print-pdf/gi ) ) {
+        var link = document.createElement( 'link' );
+        link.rel = 'stylesheet';
+        link.type = 'text/css';
+        link.href = 'css/print/pdf.css';
+        document.getElementsByTagName( 'head' )[0].appendChild( link );
+      }
+    </script>
+
+    <!--[if lt IE 9]>
+    <script src="lib/reveal.js/lib/js/html5shiv.js"></script>
+    <![endif]-->
+  </head>
+
+  <body>
+    <div class="reveal">
+      <div class="slides" id="content">
+        <section data-markdown  
+                 data-separator="==="
+                 data-vertical="---"><script type="text/template">
+
+# Oooh pretty ...
+<br>
+**CSS transitions and animations**
+
+===
+
+**New CSS properties introduced in CSS3**
+
+<br>
+
+> CSS Transitions allows property changes in CSS values to occur smoothly over a specified duration.
+
+<br>
+
+> CSS Animations [are] a way [...] to animate the values of CSS properties over time, using keyframes.
+
+===
+
+## How it works
+
+---
+
+### Transitions
+
+```css
+.foo{
+  background-color: red;
+  transition: background-color 400ms linear;
+}
+
+.foo:hover{
+  background-color: yellow;
+}
+```
+
+<div class="demo" id="demo1">
+  <div class="box"></div>
+  <div class="box transition"></div>
+</div>
+
+---
+
+`transition <property> <duration> <timing-function> <delay>`
+
+<br>
+
+ * **property** : `<css property>`, `all`
+
+ * **duration** : `2s`, `300ms`
+
+ * **timing-function** : `linear`, `ease`, `cubic-bezier()`
+
+ * **delay**: `300ms`, `none`
+
+---
+
+### Animations
+
+```css
+.wheel{
+  animation: colorwheel 5s infinite;
+}
+
+@keyframes colorwheel{
+  0%  { background: #FF4136; }
+  15% { background: #FF851B; }
+  30% { background: #FFDC00; }
+  45% { background: #2ECC40; }
+  60% { background: #0074D9; }
+  75% { background: #B10DC9; }
+}
+```
+
+<div class="demo" id="demo2">
+  <div class="box" onclick='$(this).addClass("wheel");'></div>
+  <div class="box" onclick='$(this).addClass("wheel");'></div>
+  <div class="box" onclick='$(this).addClass("wheel");'></div>
+</div>
+
+--- 
+
+`animation <name> <duration> <timing-function> <infinite?> <reverse?>`
+
+* **keyframes** : `from` and `to`, or percent points
+
+=== 
+
+### Transitions or Animations ?
+
+ * Infinite? **animation**
+
+ * Should handle dynamic state? **transition**
+
+ * Need fine-grain control? **neither**
+   <div class="fragment"><small>Well, both, but with JS controls ^^</small></div>
+
+---
+
+### Answer the question please
+
+Just use **transitions** then. Less hassle overall.
+
+===
+
+## Why use it?
+
+ * Gracefully degrates on older browsers
+
+ * Overall good support (IE 10+)
+
+ * Performance friendly (mobile-notably)
+
+ * “Logically“ the best place to put it
+
+===
+
+## Good stuff to know
+
+---
+
+### Browser rendering
+
+ * layout > paint > composite
+
+ * Want smooth animations?
+   * **opacity**
+   * **transform**
+   * colors
+   * shadows
+   * backgrounds
+---
+
+### Easings
+
+ * `<timing-function>`
+
+ * native : **linear** and **ease**
+
+ * [easings.net](http://easings.net/fr)
+ 
+<div class="demo" id="demo3">
+  <div class="container"><div class="box linear"></div></div>
+  <div class="container"><div class="box ease"></div></div>
+  <div class="container"><div class="box ease-out-back"></div></div>
+  <div class="container"><div class="box ease-in-out-expo"></div></div>
+</div>
+
+--- 
+
+### Vendor prefixes
+
+ * transitions
+ * animations
+ * keyframes
+ * properties (transform...)
+
+<br/>
+
+<div class="fragment">
+
+<strong>Just use SASS</strong>
+
+<pre><code class="sass">
+@mixin transition($args...) {
+  -webkit-transition: $args;
+  -moz-transition: $args;
+  -ms-transition: $args;
+  -o-transition: $args;
+  transition: $args;
+}
+</code></pre>
+
+</div>
+
+===
+
+## Examples
+
+---
+
+### Switches
+
+<div class="demo" id="demo4">
+  <div class="content">
+    <input type="checkbox" class="toggle" id="check1"></input>
+    <label for="check1"></label>
+  </div>
+  <div class="content">
+    <input type="checkbox" class="toggle transition" id="check2"></input>
+    <label for="check2"></label>
+  </div>
+</div>
+
+---
+
+### Spinners
+
+```css
+.spinner{       animation: spin 600ms infinite linear;         }
+.spinner:after{ animation: spin 300ms infinite linear reverse; }
+
+@keyframes spin { 
+  from:{ transform: rotate(0deg); }
+  to:{ transform: rotate(360deg); }
+}
+```
+
+<div class="demo" id="demo5">
+
+    <div class="spinner"></div>
+
+</div>
+
+---
+
+### Onload effects
+
+```css
+.loading h2.title{ opacity: 0; transform: translateY(-20px); }
+h2.title{ transform: all 300ms ease 2s; }
+```
+
+```js
+$(function(){ $('body').removeClass('loading') })
+```
+
+<div class="demo inactive" id="demo6">
+  <div class="content">
+    <h2>A title</h2>
+    <p>A subtitle</p>
+  </div>
+</div>
+
+---
+
+### 3D stuff
+
+```css
+.title:hover img{
+  transform: rotateY(180deg);
+}
+```
+
+<div class="demo" id="demo7">
+  
+  <div class="title">
+    <img src="css_animations/jt-logo.png">
+    <span>JOBTEASER</span>
+  </div>
+  
+</div>
+
+---
+
+### Chaining / controlling transitions
+
+```javascript
+  $el.addClass('fade-out');
+  setTimeout(function(){
+    $el.removeClass('fade-out').addClass('fade-in-prepare');
+    $el.find('.content').html('ON');
+    $el.redraw();
+    $el.addClass('fade-in');
+  }, 500);
+```
+
+```css
+.fade-out{ transform: scale(0); opacity: 1; transition: all 500ms ease-in-back; }
+.fade-in-prepare{ transform: scale(3); opacity: 0; }
+.fade-in{ transform: scale(1); opacity: 1; transition: all 500ms ease-out-back; }
+```
+
+<div class="demo" id="demo8">
+  
+  <div class="box">
+    <span class="content">OFF</span>
+  </div>
+  
+</div>
+
+===
+
+## Resources
+
+ * [MDN guide](https://developer.mozilla.org/en-US/docs/Web/Guide/CSS/Using_CSS_transitions)
+
+ * [W3 Reference](http://www.w3.org/TR/css3-transitions/)
+
+ * [CSS Triggers](http://csstriggers.com/)
+
+ * [Easings](http://easings.net/fr)
+
+ * [Material design](http://www.google.com/design/spec/animation/authentic-motion.html)
+
+        </script></section>
+
+      </div>
+
+    </div>
+
+    <script src="lib/reveal.js/lib/js/head.min.js"></script>
+    <script src="lib/reveal.js/js/reveal.min.js"></script>
+    <script src="lib/jquery/dist/jquery.min.js"></script>
+    <script src="config.js"></script>
+    <script src="css_animations/demo.js"></script>
+
+  </body>
+</html>

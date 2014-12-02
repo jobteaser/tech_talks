@@ -1,0 +1,418 @@
+<!doctype html>
+<html lang="en">
+
+  <head>
+    <meta charset="utf-8">
+
+    <title>Eventsource</title>
+
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+    <link rel="stylesheet" href="lib/reveal.js/css/reveal.min.css">
+    <link rel="stylesheet" href="lib/reveal.js/css/theme/night.css">
+    <link rel="stylesheet" href="lib/template.css">
+
+    <!-- For syntax highlighting -->
+    <link rel="stylesheet" href="lib/reveal.js/lib/css/zenburn.css">
+
+    <!-- If the query includes 'print-pdf', include the PDF print sheet -->
+    <script>
+      if( window.location.search.match( /print-pdf/gi ) ) {
+        var link = document.createElement( 'link' );
+        link.rel = 'stylesheet';
+        link.type = 'text/css';
+        link.href = 'css/print/pdf.css';
+        document.getElementsByTagName( 'head' )[0].appendChild( link );
+      }
+    </script>
+
+    <!--[if lt IE 9]>
+    <script src="lib/reveal.js/lib/js/html5shiv.js"></script>
+    <![endif]-->
+  </head>
+
+  <body>
+    <div class="reveal">
+      <div class="slides" id="content">
+        <section data-markdown  
+                 data-separator="==="
+                 data-vertical="---"><script type="text/template">
+
+# 20 minutes to create a chat
+
+---
+
+<img src="eventsource/assets/cat.png"/>
+
+---
+
+# ... in Ruby
+
+===
+
+* **Rails :** Create a **blog** in 20 minutes
+* **Angular :** Create a **TODO list** in 20 minutes
+* **Node :** Create a **chat** in 20 minutes
+
+===
+
+## Websockets / SSE
+
+---
+
+* Open connection
+
+* Realtime data push
+
+---
+
+### Websockets
+
+* 2-way channel (realtime push **TO** the browser)
+
+* Need an evented server
+
+* IE 10+
+
+* Obscure protocol
+
+---
+
+### Eventsource / SSE
+
+* 1-way chanel
+
+* via HTTP
+
+* TEXT!
+
+* No IE (but fallbacks)
+
+===
+
+## Eventsource?
+
+---
+
+### Why?
+
+ * proxies-friendly (http)
+
+ * fallback to long polling
+
+ * Speaks HTTP : keep the session
+
+---
+
+### Spec
+
+ * HTTP with **text/event-stream** MIME type
+
+```
+data: Hello
+
+data: World
+```
+
+
+```
+event: add
+data: 123456
+
+event: remove
+data: 456789
+```
+
+---
+
+### Native client
+
+```
+var source = new EventSource('updates.cgi');
+source.onmessage = function (event) {
+  alert(event.data);
+};
+```
+
+
+```
+var source = new EventSource('updates.cgi');
+source.addEventListener('add', addHandler, false);
+source.addEventListener('remove', removeHandler, false);
+```
+
+
+===
+
+# 0. Template
+
+---
+
+### Client
+
+```html
+<div id="chatroom">
+</div>
+
+<form action="/message" method="post">
+  <input type="text" name="message" placeholder="Type your message"></input>
+  <input type="submit" value="Send"/>
+</form>
+```
+
+---
+
+### Backend
+
+```ruby
+require 'sinatra'
+
+class App < Sinatra::Base
+
+end
+```
+
+===
+
+## 1. Open a connection
+
+---
+
+### Client
+
+<pre>
+<code class="html xml">
+&lt;script type=&quot;text/javascript&quot; src=&quot;https://code.jquery.com/jquery-2.1.1.min.js&quot;&gt;&lt;/script&gt;
+&lt;script type=&quot;text/javascript&quot; src=&quot;js/chat.js&quot;&gt;&lt;/script&gt;
+</code>
+</pre>
+
+```javascript
+var Chat = {
+  start: function(){
+    console.log('Joining the chat...');
+    var source = new EventSource('/join_room');
+  }
+};
+
+$(function(){ Chat.start(); });
+```
+
+---
+
+### Server
+
+```ruby
+get '/join_room' do
+  content_type 'text/event-stream'
+
+  puts 'Somebody joined the chat!'
+end
+``` 
+
+===
+
+## 2. Ping-pong
+
+---
+
+### Server
+
+```ruby
+get '/join_room' do
+  content_type 'text/event-stream'
+
+  stream(:keep_open) do |connection|
+    connection << "data: Welcome to the chat!\n\n"
+  end
+
+  puts 'Somebody joined the chat!'
+end
+```
+
+---
+
+### Client
+
+```javascript
+var Chat = {
+  start: function(){
+    console.log('Joining the chat...');
+    var source = new EventSource('/join_room');
+
+    var self = this;
+    source.addEventListener('message', function(event){ 
+      self.appendMessage({text: event.data});
+    });
+  },
+
+  appendMessage: function(message){
+    var line = $('<p>');
+    line.html(message.text);
+    $('#chatroom').append(line);
+  }
+};
+```
+
+===
+
+## 3. Talking to people
+
+---
+
+### Server : store connections
+
+```ruby
+set :users, []
+
+get '/join_room' do
+  content_type 'text/event-stream'
+
+  stream(:keep_open) do |connection|
+    puts 'Somebody joined the chat!'
+    settings.users << connection
+
+    # On close
+    connection.callback do
+      puts 'Somebody left the chat :('
+      settings.users.delete(connection)
+    end
+  end
+end
+```
+
+---
+
+### Server : dispatch messages
+
+```ruby
+def message(data)
+  "data: #{data.to_json}\n\n"
+end
+
+post '/post_message' do
+  puts "New message : #{params[:message]}"
+
+  settings.users.each do |connection|
+    connection << message(text: params[:message])
+  end
+
+  halt 200
+end
+```
+
+---
+
+### Client
+
+```javascript
+$('form').on('submit', function(e){
+  $.post('/post_message', $(this).serialize());
+  $(this).find('input[type="text"]').val('');
+  e.preventDefault();
+});
+```
+
+===
+
+## 4. With users
+
+---
+
+### Client
+
+```javascript
+var Chat = {
+  [...]
+  connect: function(name){
+    this.name = name;
+    [...]
+  },
+
+  sendMessage: function(messageText){
+    $.post('/post_message', {
+      text: messageText,
+      name: this.name
+    });
+  },
+
+  appendMessage: function(message){
+    var line = $('<p>');
+    line.append ('<strong>' + message.from + '</strong> : ');
+    line.append(message.text);
+    this.chatRoom.append(line);
+  }
+}
+```
+
+---
+
+### Server
+
+```ruby
+post '/post_message' do  
+  settings.users.each do |connection|
+    connection << message(from: params[:name], text: params[:text])
+  end
+end
+```
+
+===
+
+## 5. Integration
+
+---
+
+* Talking via http : sessions are here!
+
+* Deployable to a separate service / server
+
+  * redis pubsub / rabbitmq bus
+
+  * Or just plain HTTP : `post '/dispatch'`
+
+=== 
+
+## 6. Ship it!
+
+* Evented server needed (thin + nginx)
+
+* Heroku compatible : https://jtrubychatdemo.herokuapp.com/
+
+---
+
+### Nginx config 
+
+```
+proxy_set_header Connection '';
+proxy_http_version 1.1;
+chunked_transfer_encoding off;
+proxy_buffering off;
+proxy_cache off;
+```
+
+
+===
+
+## Links
+
+(W3C Spec)[http://www.w3.org/TR/2012/WD-eventsource-20120426/]
+
+(Sinatra streaming)[http://www.sinatrarb.com/contrib/streaming.html]
+
+        </script></section>
+
+      </div>
+
+    </div>
+
+    <script src="lib/reveal.js/lib/js/head.min.js"></script>
+    <script src="lib/reveal.js/js/reveal.min.js"></script>
+    <script src="lib/jquery/dist/jquery.min.js"></script>
+    <script src="config.js"></script>
+
+  </body>
+</html>

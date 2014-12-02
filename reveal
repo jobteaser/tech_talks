@@ -19,11 +19,15 @@ presentation_name = ARGV[1]
 presentation_html = TEMPLATE_HTML.gsub(/\[presentation_name\]/, presentation_name)
 
 # Create the file
-target_path = "#{CURRENT_DIR}/#{presentation_name.dup.downcase!.gsub!(/[^a-z0-9\-_]+/i, '_')}.html"
+presentation_file_name = presentation_name.dup.downcase.gsub(/[^a-z0-9\-_]+/i, '_')
+target_path = "#{CURRENT_DIR}/#{presentation_file_name}.html"
 
 File.open(target_path, 'wb') do |file|
   file.write presentation_html
 end
+
+# Create the folder for assets
+FileUtils.mkdir "#{CURRENT_DIR}/#{presentation_file_name}"
 
 # Print help for the next step
 puts "Your presentation is ready at #{target_path}"

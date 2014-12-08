@@ -19,7 +19,7 @@ presentation_name = ARGV[1]
 presentation_html = TEMPLATE_HTML.gsub(/\[presentation_name\]/, presentation_name)
 
 # Create the file
-target_path = "#{CURRENT_DIR}/#{presentation_name.dup.downcase!.gsub!(/[^a-z0-9\-_]+/i, '_')}.html"
+target_path = "#{CURRENT_DIR}/#{presentation_name.downcase.gsub(/[^a-z0-9\-_]+/i, '_')}.html"
 
 File.open(target_path, 'wb') do |file|
   file.write presentation_html

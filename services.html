@@ -1,0 +1,431 @@
+<!doctype html>
+<html lang="en">
+
+  <head>
+    <meta charset="utf-8">
+
+    <title>soa</title>
+
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+    <link rel="stylesheet" href="lib/reveal.js/css/reveal.min.css">
+    <link rel="stylesheet" href="lib/reveal.js/css/theme/night.css">
+    <link rel="stylesheet" href="lib/template.css">
+
+    <!-- For syntax highlighting -->
+    <link rel="stylesheet" href="lib/reveal.js/lib/css/zenburn.css">
+
+    <!-- If the query includes 'print-pdf', include the PDF print sheet -->
+    <script>
+      if( window.location.search.match( /print-pdf/gi ) ) {
+        var link = document.createElement( 'link' );
+        link.rel = 'stylesheet';
+        link.type = 'text/css';
+        link.href = 'css/print/pdf.css';
+        document.getElementsByTagName( 'head' )[0].appendChild( link );
+      }
+    </script>
+
+    <!--[if lt IE 9]>
+    <script src="lib/reveal.js/lib/js/html5shiv.js"></script>
+    <![endif]-->
+  </head>
+
+  <body>
+    <div class="reveal">
+      <div class="slides" id="content">
+        <section data-markdown  
+                 data-separator="==="
+                 data-vertical="---"><script type="text/template">
+
+# Services 
+
+<br>
+
+### An architectural proposition
+
+===
+
+## Services
+
+> Services are unassociated, loosely coupled units of functionality that are self-contained.
+
+<br>
+
+Its a code **organization** pattern
+
+---
+
+### Key points
+
+* Black boxes with public API
+
+* Speak a standard language
+
+* Isolated from each other
+
+* Data AND/OR functionality
+
+* (Bonus) re-usable
+
+---
+
+It&#39;s like developing / using internal apps with APIs
+
+---
+
+### SOA?
+
+* Very broad term
+
+* Enterprise connotations
+
+===
+
+## Isolation
+
+---
+
+* At the model / business / library layer
+
+* We still need **dumb** controllers for
+
+  * Routing
+
+  * Orchestration
+
+  * Rendering
+
+---
+
+ * Code is **not** shared
+
+ * Models are **not** shared
+
+ * Public interface that speaks primitives (JSON-able)
+
+---
+
+### Isolation levels
+
+1. Code-level only
+
+2. Self-hosted, shared database
+
+3. Self hosted, different database
+
+---
+
+### However
+
+You can (and should) call services from other services
+
+===
+
+## Advantages
+
+---
+
+### Robustness
+
+ * No side effects
+
+ * Fully tested
+
+ * Mockable
+
+---
+
+### Performance
+
+ * Caching-friendly
+
+ * Profilable / Optimizable 
+   <br><small>code AND datastore</small>
+
+ * Horizontally scalable
+
+---
+
+### Process
+
+ * Handle growing teams
+
+ * Separately deployable
+
+ * Versionable
+
+---
+
+### Developer-friendly
+
+ * Can fit on one&#39;s head
+
+ * Allow tech experimentation
+
+ * Code ownership
+
+===
+
+
+## Caveats
+
+---
+
+* Services Orchestration
+
+* Heavy functional changes
+
+* Performance impact
+
+===
+
+# SOA in Rails
+
+===
+
+## Isolation
+
+* Data AND/OR functionality
+
+* Via modules
+
+===
+
+## The public API / client
+
+* Most important part
+
+* Static interface
+
+* Speaks primitives or JSON
+
+* RESTful better if applicable
+
+---
+
+```
+
+Recommendations::Client.get_recommended_job_offers(
+  4, # The student's id
+  page: 2,
+  per_page: 5,
+  order: 'relevance',
+  filters: {
+    published_since: (Date.today - 1.week).to_i
+  }
+)
+
+=> { 
+  status: 200, 
+  response: { 
+    total: 124, 
+    offer_ids: [ 8543, 65978, 3244, 54756, 75732 ] 
+  } 
+}
+
+```
+
+---
+
+### Important bits
+
+ * Could be local or remote
+
+ * Could call other services or an internal store
+
+ * Could have been fetched synchronously or in a cache
+
+ * ** We don't care**
+
+===
+
+## Sample implementation
+
+---
+
+```bash
+services
+ - recommendations
+   - client.rb
+   - doc.md
+   - lib
+     - cache
+     - models
+     - engine
+     - controller.rb
+     - presenter.rb
+   - specs
+```
+
+---
+
+* client
+* controller + presenter
+* business (models / logic) + tests
+
+---
+
+### The client / mocks
+
+ * Only shared code
+
+ * Convert calls to requests
+ <br>
+ <small>Basically `to_json`</small>
+
+ * May issue / handle HTTP call
+
+ * Handles versioning
+
+---
+
+### The controller / presenter
+
+ * Route requests
+
+ * Parses params
+ 
+ * Format and sends response
+
+---
+
+### The business logic
+
+ * Namespaces so no conflicts
+
+ * No shared code with other services
+
+ * May have own models / datastore
+
+===
+
+## In more details
+
+---
+
+### What goes elsewhere?
+
+ * **core app**
+   * High-level logic
+   * Sessions handling
+   * Rendering
+ 
+ * **libs/gems**
+   * Shared technical dependencies
+
+ * **specs**
+   * Integration suite
+
+---
+
+### What about shared models?
+
+ * **A.** Extract in a separate service
+
+ * **B.** Split into private sub-models
+
+ * **C.** Just use ids and manual joins
+
+ * Use hooks for callbacks
+
+===
+
+### Presenter?
+
+ > Have a **single** representation for resources returned by data services
+
+ * easier to use
+
+ * easier to mock
+
+ * easier to cache
+
+===
+
+## Tools
+
+* VCR
+
+* HTTParty / typhoeus
+
+* Draper
+
+* Sinatra
+
+* fdoc / swagger / ... (?)
+
+===
+
+# SOA @ jobteaser
+
+===
+
+### Graceful introduction
+
+ 1. New code in a client
+
+ 2. Spec it fully
+
+ 3. Move existing code by pieces
+
+ 4. Finish last touches
+
+ 5. Deploy it separately
+
+---
+
+### Services
+
+ * Auth / SSO
+
+ * Student Preferences
+
+ * Job Offers / Events
+
+ * Mailing cycle
+
+ * Permissions
+
+ * ...
+
+---
+
+### Core App
+
+ * Sessions
+
+ * App configuration (intranet)
+
+ * Templates (logic-less)
+
+===
+
+### Read more
+
+ * Service-Oriented Design with Ruby on Rails
+
+ * [Soundcloud story](https://developers.soundcloud.com/blog/building-products-at-soundcloud-part-1-dealing-with-the-monolith)
+
+ * [Songkick story](http://devblog.songkick.com/2012/08/30/the-client-side-of-soa)
+
+ * [Square story (YT)](https://www.youtube.com/watch?v=6mesJxUVZyI)
+
+ * [Arkency story](http://blog.arkency.com/2013/12/rails-and-soa-do-i-really-need-to-have-this-big-app/)
+
+        </script></section>
+
+      </div>
+
+    </div>
+
+    <script src="lib/reveal.js/lib/js/head.min.js"></script>
+    <script src="lib/reveal.js/js/reveal.min.js"></script>
+    <script src="lib/jquery/dist/jquery.min.js"></script>
+    <script src="config.js"></script>
+
+  </body>
+</html>

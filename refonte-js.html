@@ -1,0 +1,583 @@
+<!doctype html>
+<html lang="en">
+
+  <head>
+    <meta charset="utf-8">
+
+    <title>Refonte V4</title>
+
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+    <link rel="stylesheet" href="lib/reveal.js/css/reveal.min.css">
+    <link rel="stylesheet" href="lib/reveal.js/css/theme/night.css">
+    <link rel="stylesheet" href="lib/template.css">
+
+    <!-- For syntax highlighting -->
+    <link rel="stylesheet" href="lib/reveal.js/lib/css/zenburn.css">
+
+    <!-- If the query includes 'print-pdf', include the PDF print sheet -->
+    <script>
+      if( window.location.search.match( /print-pdf/gi ) ) {
+        var link = document.createElement( 'link' );
+        link.rel = 'stylesheet';
+        link.type = 'text/css';
+        link.href = 'css/print/pdf.css';
+        document.getElementsByTagName( 'head' )[0].appendChild( link );
+      }
+    </script>
+
+    <!--[if lt IE 9]>
+    <script src="lib/reveal.js/lib/js/html5shiv.js"></script>
+    <![endif]-->
+  </head>
+
+  <body>
+    <div class="reveal">
+      <div class="slides" id="content">
+        <section data-markdown  
+                 data-separator="==="
+                 data-vertical="---"><script type="text/template">
+
+# Refonte v4
+
+**Contribution guide for backend developers**
+
+
+===
+
+## Context
+
+---
+
+### 1 : Slow page load
+
+ - ~1 MB (de-gzipped) JS with dependencies
+
+ - `content_for :scripts`
+
+ - blocked rendering
+
+<br>
+
+Time to first paint : **2.53s**
+
+---
+
+### 2. Long deployment
+
+  - Assets compilation : ~50min
+
+```
+ls **/schools/*.scss|wc -l
+390
+```
+
+<!-- */ -->
+
+---
+
+### 3. Unmaintainable JS
+
+ - `content_for :scripts`
+
+ - `content_for :script_libraries`
+
+ - Error reporting
+
+ - Code duplication
+
+ - All-or-nothing crash
+
+===
+
+## Changes
+
+ - Dynamic school theme
+
+ - Asynchronous JS loading
+
+ - JS restructuration
+
+===
+
+## Dynamic school theme
+
+===
+
+### Before
+
+&lt;link href=&quot;/assets/schools/dauphine.css&quot;&gt;
+
+<br>
+
+```scss
+// app/assets/stylesheets/schools/dauphine.scss
+
+$color: #00428f;
+$color2: #002c66;
+
+@import "../application";
+```
+
+<br>
+
+** Full duplication **
+
+---
+
+### After
+
+
+&lt;link href=&quot;**/custom_colors/frontend.css**&quot;&gt;
+
+<br>
+
+```ruby
+# config/routes.rb
+get '/custom_colors/:template.css', :to => 'application#custom_colors'
+```
+
+```ruby
+> School.find('dauphine').configuration.color_scheme
+{
+  "color"=>"#00428f",
+  "box-title-color"=>"#002c66",
+  "color-nav"=>"#002c66",
+  "color-darken"=>"#00428f",
+  "color-highlight"=>"#002c66",
+  "text"=>"#00428f",
+  "text-btn"=>"#f4f4f4",
+  "gray"=>"#e7e7e7",
+  "gray2"=>"#f4f4f4",
+  "gray-darken"=>"#cbcbcb"
+}
+```
+
+===
+
+### How?
+
+---
+
+One file with only color definitions
+
+```scss
+// app/assets/stylesheets/base/_colors.scss
+$color: #a4c639; // couleur principale background
+$box-title-color: #4d7f86; // couleur des titre des blocs
+// [...]
+```
+
+---
+
+One file with **all** styles dependant of colors
+
+```scss
+// app/assets/stylesheets/base/_theme.scss
+.txt-color, 
+a, a:hover, a:active, a:focus, a:visited
+{ color: $text; }
+
+.bg-color
+{ background-color: $color; }
+
+.title-color { color: $box-title-color; }
+
+// [...]
+```
+
+<small> keep it light! </small>
+
+---
+
+Include them in the base CSS
+
+```scss
+// app/assets/stylesheets/application.scss
+
+@import "base/colors";
+@import "base/theme";
+
+@import "layout/header";
+// [...]
+```
+
+---
+
+Manually compile `_theme.scss` with the school custom colors
+
+<br>
+
+```ruby
+# config/initializrs/color_scheme.rb
+
+frontend_theme_scss_file = File.join(Rails.root, 'app/assets/stylesheets/base/_theme.scss')
+ColorScheme.configure do |config|
+  config.register_template(:frontend, frontend_css_template)
+end
+```
+
+
+```ruby
+# GET /custom_colors/:template.css
+def custom_colors
+  school = get_current_school
+  head 404 and return unless school && school.intranet?
+
+  scheme = ColorScheme.new(school.configuration.color_scheme)
+  render :text => scheme.compiled_css(params[:template]), :content_type => 'text/css'
+end
+```
+
+===
+
+### Gains
+
+---
+
+- Live editing, without need for deployment
+
+- Re-usable for - eg - company custom themes
+
+---
+
+Only 11 assets to compile
+
+```ruby
+# config/initializers/assets.rb
+Rails.application.config.assets.precompile = [
+
+  # Frontend
+  'application.css',
+  'print.css',
+  'frontend.js',
+
+  # Backend
+  'backend/backend.css',
+  'backend/application.js',
+  'backend/stats.css',
+
+  # Forum appli
+  'apps/forum_form.css',
+  'apps/forum_form.js',
+
+  # Forum subscriptions
+  'apps/forum-subscription.css',
+
+  # Mobile webviews
+  'mobile/application.css',
+  'mobile/mobile.js'
+
+]
+```
+
+
+===
+
+## Non-blocking JS
+
+<div class="fragment">
+&lt;script **async=&quot;async&quot;** src=&quot;/assets/frontend.js&quot;&gt;
+</div>
+
+<br>
+
+<div class="fragment">
+Time to first paint : 2.5s → **1s**
+</div>
+
+---
+
+### Consequence
+
+ - No inline JS in the view (dependencies are not loaded)
+
+ - Compilation needed (download order of files is not guaranteed)
+
+=== 
+
+## JS (re?)structuration
+
+---
+
+### 3 levels
+
+- **bower components** : vendor dependencies
+
+- **libs** : pure-JS helpers 
+
+- **components** : DOM manipulation
+
+<br>
+
+required and initialized in **app/assets/javascripts/frontend.coffee**
+
+---
+
+* Global namespace : `window.JT`
+
+* App-wide configuration injected in `ApplicationLayout#js_config`
+
+  * remote services api keys
+  * flash messages
+  * current user, current locale
+
+* When `application.coffee` is downloaded
+
+  * Initialize libs with config
+  * Parse the DOM for components
+
+===
+
+### Bower
+
+ * bootstrap
+
+ * lodash
+
+ * flowplayer
+
+ * ...
+
+---
+
+* Hard dependency : **node**  (instructions in README)
+
+* Live in /vendor/assets/bower_components
+
+* Only versioned : `bower.json`
+
+--- 
+
+### How to add a bower component
+
+<br>
+
+`bower search multiselect`
+
+`bower install bootstrap-multiselect --save`
+
+<br>
+
+```coffeescript
+# app/assets/javascripts/frontend.coffee
+#= require bower_components/bootstrap-multiselect/dist/js/bootstrap-multiselect.js
+```
+
+===
+
+### Libs
+
+* google-analytics.coffee
+
+* google-maps.coffee
+
+* pubsub.coffee
+
+* ...
+
+---
+
+Live on the global namespace
+
+```coffeescript
+# Wrapper around Raven, with convenience methods for catching and being notified of exceptions
+
+ExceptionNotifier = {}
+
+ExceptionNotifier.configure = (ravenDSN, userId) ->
+  if ravenDSN
+    Raven.config(ravenDSN, {
+      # whitelistUrls: ['*.jobteaser.com']
+    }).install()
+
+    Raven.setUser({
+      id: userId || 'visitor'
+    })
+
+JT.catchError = (fn) ->
+  try
+    fn()
+  catch err
+    log('[ERROR]', err)
+    Raven.captureException(err)
+
+
+# Export
+JT.ExceptionNotifier = ExceptionNotifier
+```
+
+---
+
+Configured in  `frontend.coffee`
+
+```coffeescript
+# Configure exceptions catching
+JT.ExceptionNotifier.configure(JT.config.raven_dsn, JT.config.current_user)
+```
+
+===
+
+### Components
+
+ * autohide_box.coffee
+
+ * video_player.coffee
+
+ * companies_filtering.coffee
+
+---
+
+ * Scoped and bound to DOM elements
+
+ * Initializable with options
+
+ * Declared in the view, instanciated in one pass after the JS is loaded 
+
+ * AJAX-loaded content must be given a new pass
+
+---
+
+### A sample component
+
+```coffeescript
+# JS component defining a slidable box, and its trigger
+class Slidable extends JT.Components.Base
+
+  # Options :
+  # - container : the jquery selector for the content to be slided down / up
+  # - trigger : the jquery selector for the slide trigger
+  # - is_hidden (default false) : should the box be closed by default
+  initialize: (opts) ->
+
+    # Store DOM elements
+    @$container = @$el.find(opts.container)
+    @$trigger = @$el.find(opts.trigger)
+
+    # Apply configuration
+    if opts.is_hidden
+      @$container.hide()
+
+    # Bind to DOM events
+    @$trigger.on 'click', _.bind(this.toggle, this)
+
+  # Toggle the container
+  toggle: () ->
+    @$container.slideToggle()
+
+
+JT.Components.Slidable = Slidable
+
+```
+
+---
+
+### Declaration in the view
+
+```haml
+%div{ js_component(:slidable, container: '.sign-in-with-school-container', trigger: '.sign-in-with-school-link', is_hidden: true) }
+
+  %h2.sign-in-with-school-link
+    = t('sign_in_with_school')
+    %i.fa.fa-chevron-down
+
+  .sign-in-with-school-container
+    - @sso_schools.each do |school|
+      = render partial: 'sso_signin', locals: {school: school}
+```
+
+--- 
+
+### Advantages
+
+ - Re-usable
+
+ - Isolated
+
+ - Robust against HTML / CSS changes
+
+
+===
+
+## Miscelanea
+
+---
+
+### Rails generator for JS component
+
+```
+> bundle exec rails g js_component GroupedAutocomplete
+```
+
+---
+
+### I18n in components
+
+```yaml
+# config/locales/javascripts/autohide_box.fr.yml
+fr:
+  javascripts:
+    autohide_box:
+      see_more: 'Afficher plus'
+      see_less: 'Afficher moins'
+```
+
+```coffeescript
+# app/assets/javascripts/frontend/components/autohide_box.coffee
+
+class AutohideBox extends JT.Components.Base
+  # [...]
+  render: () ->
+    if @opened
+      @$el.css('height', @max_height)
+      @$footer_container.html @i18n.see_less
+    else
+      @$el.css('height', @min_height)
+      @$footer_container.html @i18n.see_more
+```
+
+---
+
+### Goodies in the stack
+
+ * fontawesome
+
+ * lodash
+
+ * handlebars for component templating
+
+ * `log()` : dev/staging-only console.log
+
+ * event bus : `JT.PubSub`
+
+
+=== 
+
+## What's next ?
+
+ * Pattern for components composition (eg, popup including a video player)
+
+ * React.js integration for server-side pre-rendering
+
+ * Who knows ?
+
+===
+
+# Questions?
+
+        </script></section>
+
+      </div>
+
+    </div>
+
+    <script src="lib/reveal.js/lib/js/head.min.js"></script>
+    <script src="lib/reveal.js/js/reveal.min.js"></script>
+    <script src="lib/jquery/dist/jquery.min.js"></script>
+    <script src="config.js"></script>
+
+  </body>
+</html>

@@ -1,0 +1,349 @@
+<!doctype html>
+<html lang="en">
+
+  <head>
+    <meta charset="utf-8">
+
+    <title>Rails 4</title>
+
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+    <link rel="stylesheet" href="lib/reveal.js/css/reveal.min.css">
+    <link rel="stylesheet" href="lib/reveal.js/css/theme/night.css">
+    <link rel="stylesheet" href="lib/template.css">
+
+    <!-- For syntax highlighting -->
+    <link rel="stylesheet" href="lib/reveal.js/lib/css/zenburn.css">
+
+    <!-- If the query includes 'print-pdf', include the PDF print sheet -->
+    <script>
+      if( window.location.search.match( /print-pdf/gi ) ) {
+        var link = document.createElement( 'link' );
+        link.rel = 'stylesheet';
+        link.type = 'text/css';
+        link.href = 'css/print/pdf.css';
+        document.getElementsByTagName( 'head' )[0].appendChild( link );
+      }
+    </script>
+
+    <!--[if lt IE 9]>
+    <script src="lib/reveal.js/lib/js/html5shiv.js"></script>
+    <![endif]-->
+  </head>
+
+  <body>
+    <div class="reveal">
+      <div class="slides" id="content">
+        <section data-markdown  
+                 data-separator="==="
+                 data-vertical="---"><script type="text/template">
+
+# Rails 4
+
+What has changed?
+
+<!--[Markdown cheatsheet](https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet)-->
+
+
+===
+
+## Configuration
+
+Eager loading of the code has been disabled in development/test and enabled in production/staging
+
+This means faster boot time in development/test as the code will be loaded as it is needed
+
+---
+
+### Secret keys
+
+* Added a custom secret key for Devise
+* The Rails secret key is now accessible with `JobteaserCom::Application.config.secret_key_base`
+
+===
+
+## Routes
+
+New routes localisation gem 'route_translator'
+
+[Check it out here](https://github.com/Ghrind/route_translator)
+
+---
+
+### No more default_url_options
+
+* They weren't working as expected
+* Default locale is enforced in the routes
+* Current locale is enforced by route_translator
+
+---
+
+### Default subdomain
+
+* Remember to use the **www** subdomain when there is no school subdomain
+* Good: **www**.staging.jobteaser.com
+* Bad: staging.jobteaser.com
+
+---
+
+### Enforce verb in **routes.rb**
+
+```ruby
+# Bad
+match '/providers', to: 'providers#index'
+
+# Good
+get '/providers', to: 'providers#index'
+
+# Good
+match '/foobar_callback', to: 'foobars#callback', via: [:get, :post]
+
+````
+
+===
+
+## ActiveRecord
+
+By default Rails 4 prohibits using params to do mass assignement on an `ActiveRecord` model
+
+For now, this default is overidden in `config/application.rb`
+
+```ruby
+config.active_record.whitelist_attributes = false
+```
+
+This shouldn't stop us from using [strong parameters](://github.com/rails/strong_parameters)
+
+---
+
+### Friendly finder
+
+The newest version of `friendly` changes its behavior
+
+```ruby
+# Before
+School.find('essec')
+
+# Now
+School.friendly.find('essec')
+```
+
+The **old behavior** has been enforced with `lib/friendly_additions.rb`
+
+===
+
+## Devise
+
+When sending an email with a password recovery token, the user token is not sent in the email anymore, instead we used another token generated from the user token
+
+[You can check the PR here](https://github.com/jobteaser/jobteaser/pull/2615/files)
+
+---
+
+### Unique key in params
+
+To make `Devise` work properly, the user `unique_key` is injected in the request by a middleware
+
+You can check it at `app/middleware/inject_unique_key_in_params.rb`
+
+===
+
+## Specs
+* Upgrade to **RSpec 3**
+* Old syntax is still supported through:
+  * `rspec-its`
+  * `rspec-collection_matchers`
+  * `rspec-activemodel-mocks`
+* Allow capybara to visit any url
+* Use `infer_spec_type_from_file_location` to find the subject type automatically
+
+---
+
+### Timecop
+
+```ruby
+# Bad
+before do
+  Time.stub(:now) { '15/07/2014'.to_time }
+end
+
+# Good
+before do
+  Timecop.freeze('15/07/2014'.to_time)
+end
+
+after do
+  Timecop.return
+end
+
+```
+---
+
+### `pending` versus `skip`
+
+RSpec now runs the specs marked as pending and fails if the test is running properly (yes, you read that right)
+
+The good way to prohibit a spec from running is to use `skip`
+
+```ruby
+# Bad
+pending 'This test will run and fail'
+
+# Good
+skip 'This test will not run'
+
+```
+
+---
+
+### RSpec 3 `should` syntax
+
+**Not mandatory for now**
+
+```ruby
+# Bad
+expression.should eq false
+
+# Good
+expect(expession).to eq false
+```
+
+---
+
+### `be_false` and `be_true`
+
+```ruby
+# Bad
+expect(expession).to be_true
+expect(expession).to be_false
+
+# Good - When the expression is exactly true or false
+expect(expession).to eq true
+expect(expession).to eq false
+
+# Good - When the expression is true or false on ruby terms
+expect(nil).to be_falsey # => This will pass
+expect('foobar').to be_truthy # => This will pass
+
+```
+
+[More on that subject](https://github.com/rspec/rspec-expectations/issues/283)
+
+===
+
+## Deprecation warnings
+
+* Use serialized_attributes as a class method and not an instance method
+* Remove config.whiny_nils
+* There is probably **more** :)
+
+---
+
+### Observers
+
+* Replace `#transaction_include_action?` by `#transaction_include_any_action?`
+
+```ruby
+# Bad
+transaction_include_action?(:create)
+
+# Good
+transaction_include_any_action?([:create])
+```
+
+---
+
+### Rewrite **scopes** to use procs
+
+```ruby
+# Bad
+scope :foobar, conditions: { active: true }
+
+# Good
+scope :foobar, -> { where active: true }
+```
+
+---
+
+### Find or initialize
+
+```ruby
+# Bad
+find_or_initialize_by_name(name)
+
+# Good
+find_or_initialize_by(name: name)
+
+```
+
+---
+
+### `ActiveRecord::Base#all`
+
+```ruby
+# Bad
+School.active.all
+
+# Good - Query will be executed when we need the collection
+School.active
+School.active.class # => ActiveRecord::Relation::ActiveRecord_Relation_School
+
+# Good - Query will be executed now
+School.active.to_a
+School.active.to_a.class # => Array
+```
+
+===
+
+## Misc
+
+* The **cell** view renderer has been removed
+* Upgraded gibbon (the **mailchimp** library) from 0.3.0 to 1.1.5
+* Make `ExportFile#file_path` a public method because it is called from another class
+* Replace dashes by underscores in partial names
+
+---
+
+### Regular expressions
+
+Using `^` or `$` when validating an attibute is forbidden
+
+```ruby
+# Bad
+validate :name, with: { format: /^(.*)$/ }
+
+# Good
+validate :name, with: { format: /\A(.*)\z/ }
+```
+
+---
+
+### `Rack::Rewrite` middleware
+
+It is now included before `Rack::Runtime` instead of `Rack::Lock`, which wasn't always included depending on the environment
+
+---
+
+### Asset pipeline
+
+* Assets are not minimized nor compressed in a single file in development environment
+* The application is initialized when precompiling assets (needed for the i18n-js file)
+* The `:defaults` expansion when including javascripts has been removed
+* Change JQuery UI JS filename from `jquery.ui.all` to `jquery-ui` (new version of the gem)
+
+        </script></section>
+
+      </div>
+
+    </div>
+
+    <script src="lib/reveal.js/lib/js/head.min.js"></script>
+    <script src="lib/reveal.js/js/reveal.min.js"></script>
+    <script src="lib/jquery/dist/jquery.min.js"></script>
+    <script src="config.js"></script>
+
+  </body>
+</html>

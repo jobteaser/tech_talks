@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+
+  <head>
+    <meta charset="utf-8">
+
+    <title>i18n</title>
+
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+    <link rel="stylesheet" href="lib/reveal.js/css/reveal.min.css">
+    <link rel="stylesheet" href="lib/reveal.js/css/theme/night.css">
+    <link rel="stylesheet" href="lib/template.css">
+
+    <!-- For syntax highlighting -->
+    <link rel="stylesheet" href="lib/reveal.js/lib/css/zenburn.css">
+
+    <!-- If the query includes 'print-pdf', include the PDF print sheet -->
+    <script>
+      if( window.location.search.match( /print-pdf/gi ) ) {
+        var link = document.createElement( 'link' );
+        link.rel = 'stylesheet';
+        link.type = 'text/css';
+        link.href = 'css/print/pdf.css';
+        document.getElementsByTagName( 'head' )[0].appendChild( link );
+      }
+    </script>
+
+    <style>
+        code{ margin-top: 40px!important; font-size: 24px!important; line-height: 36px!important; }
+        code{ background: transparent!important; }
+    </style>
+
+    <!--[if lt IE 9]>
+    <script src="lib/reveal.js/lib/js/html5shiv.js"></script>
+    <![endif]-->
+  </head>
+
+  <body>
+    <div class="reveal">
+      <div class="slides" id="content">
+        <section data-markdown
+                 data-separator="==="
+                 data-vertical="---"><script type="text/template">
+
+# i18n
+
+===
+
+## Level 0
+
+**.yml files, global pool**
+
+```ruby
+# config/application.rb
+config.i18n.available_locales = [:fr, :en, :de]
+```
+
+===
+
+## Level 1
+
+**routing, sp job offers, layout**
+
+---
+
+### Before
+
+```ruby
+has_english_module
+```
+
+---
+
+### Now
+
+```ruby
+class SchoolConfiguration
+  serialize :enabled_locales, Array
+end
+```
+
+---
+
+* <strong>Jobteaser</strong> : `[:fr, :en]`
+
+* <strong>CC fr</strong> : `[:fr]`
+
+* <strong>CC en</strong> : `[:fr, :en]`
+
+===
+
+## Level 2
+
+**active content scopes**
+
+---
+
+### Before
+
+**'all', 'fr', 'en-only'**
+
+* `User#locale`
+* `StudentProfile#enable_foreign_languages`
+* `ApplicationController#current_language_with_param`
+* `ElasticSearchHelper::handle_localize_attr`
+* `LocalizationRules::StudentContent#language`
+
+---
+
+### Now
+
+**persistence**
+
+```ruby
+class User
+  serialize :content_locales, Array
+end
+```
+
+---
+
+### Now
+
+**locales list**
+
+```ruby
+class ApplicationController
+  def current_content_locales
+    # current_user
+    # I18n.locale
+    # params[show/hide fr]
+  end
+end
+```
+
+---
+
+### Now
+
+**tire helper**
+
+```ruby
+LocalizationHelper::tire_filter_active(search, locales)
+
+LocalizationHelper::tire_filter_inactive(search, locales)
+```
+
+===
+
+## Level 3
+
+**displayed translations**
+
+---
+
+### Per-locale fallbacks
+
+```ruby
+# config/application.rb
+config.i18n.fallbacks = {
+  fr: [:en, :de],
+  en: [:fr, :de],
+  de: [:en, :fr]
+}
+```
+
+===
+
+## Retro-compatibility
+
+* `User#locale`
+* `StudentProfile#enable_foreign_languages`
+* `SchoolConfiguration#has_english_module`
+
+===
+
+# Questions ?
+
+        </script></section>
+
+      </div>
+
+    </div>
+
+    <script src="lib/reveal.js/lib/js/head.min.js"></script>
+    <script src="lib/reveal.js/js/reveal.min.js"></script>
+    <script src="lib/jquery/dist/jquery.min.js"></script>
+    <script src="config.js"></script>
+
+  </body>
+</html>

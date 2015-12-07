@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+
+  <head>
+    <meta charset="utf-8">
+
+    <title>Cvtheques</title>
+
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+    <link rel="stylesheet" href="lib/reveal.js/css/reveal.min.css">
+    <link rel="stylesheet" href="lib/reveal.js/css/theme/night.css">
+    <link rel="stylesheet" href="lib/template.css">
+
+    <!-- For syntax highlighting -->
+    <link rel="stylesheet" href="lib/reveal.js/lib/css/zenburn.css">
+
+    <!-- If the query includes 'print-pdf', include the PDF print sheet -->
+    <script>
+      if( window.location.search.match( /print-pdf/gi ) ) {
+        var link = document.createElement( 'link' );
+        link.rel = 'stylesheet';
+        link.type = 'text/css';
+        link.href = 'css/print/pdf.css';
+        document.getElementsByTagName( 'head' )[0].appendChild( link );
+      }
+    </script>
+
+    <!--[if lt IE 9]>
+    <script src="lib/reveal.js/lib/js/html5shiv.js"></script>
+    <![endif]-->
+  </head>
+
+  <body>
+    <div class="reveal">
+      <div class="slides" id="content">
+        <section data-markdown
+                 data-separator="==="
+                 data-vertical="---"><script type="text/template">
+
+# Cvtheques
+
+===
+
+## Why
+
+* Applicant backends (all the students who applied to my event / offer)
+
+* Permanent cvtheque (students from a school)
+
+* Ephemeral cvtheque (forum subscribers for a time window)
+
+===
+
+![](cvtheques/job_offer_applicants.png)
+
+---
+
+![](cvtheques/permanent.png)
+
+---
+
+## UI and Search
+
+===
+
+## Applicants
+
+![](cvtheques/applicants.png)
+
+===
+
+## Code
+
+```bash
+app
+├── controllers
+|  ├── backend
+|  |  └── cvtheques_controller.rb
+|  └── concerns
+|  |  └── authorizations
+|  |      ├── cvtheque_acl.rb
+|  |      └── cvtheque_authorizations.rb
+├── decorators
+|  └── resume_decorator.rb
+├── domain
+|   └── cvtheque
+|       ├── index
+|       |  ├── importing.rb
+|       |  ├── indexed_search.rb
+|       |  └── mapping.rb
+|       ├── index.rb
+|       ├── scope.rb
+|       └── xls_exporter.rb
+├── models
+|  └── cvtheques
+|  |  ├── base.rb
+|  |  ├── candidacy_pool_common.rb
+|  |  ├── ephemeral.rb
+|  |  ├── events_subscribers.rb
+|  |  ├── job_offer_applicants.rb
+|  |  ├── jobteaser.rb
+|  |  └── permanent.rb
+|  └── cvtheque_ephemeral_window.rb
+└── presenters
+    └── cvtheque_presenter.rb
+```
+
+---
+
+* Virtual models (only for search)
+
+* Separate index (students + applications data)
+
+* View logic in presenters and decorators
+
+===
+
+## Howto
+
+---
+
+### Update index for a student
+
+```ruby
+Cvtheque::Index.update_student(student_profile, blocking: false)
+```
+
+---
+
+### Reindex all
+
+```ruby
+# Via workers
+bundle exec rake elasticsearch:rebuild_cvtheque
+
+# Synchronous in console
+Cvtheque::Index.rebuild!
+```
+
+---
+
+### Search applicants for job offer
+
+```ruby
+Cvtheque::JobOfferApplicants.new(job_offer).search(application_status: 'unread')
+# => #<OpenStruct
+#      total=45,
+#      current_page=1,
+#      total_pages=4,
+#      results=#<ActiveRecord::AssociationRelation [#<Candidacy::Applicant id: 140145, ...]>
+```
+
+===
+
+## More complex
+
+Add a new field to the student profiles
+
+Should be present in the cvtheque
+
+---
+
+### Add it to the mapping
+
+```ruby
+# app/domain/cvtheques/index/mapping.rb
+mapping do
+  # ...
+  indexes :favorite_color_name, analyzer: 'keyword'
+end
+
+def serialize(student_profile)
+  {
+    # ...
+    favorite_color: student.favorite_color.name
+  }
+end
+
+# app/domain/cvtheques/index/importing.rb
+BULK_IMPORT_INCLUDES = [
+  # ...
+  :favorite_color
+]
+
+```
+
+---
+
+### Handle it in the search
+
+```ruby
+# app/models/cvtheque/base.rb
+class Cvtheque::Base
+  def search_scope(criteria)
+    scope = base_scope
+
+    # ...
+
+    if criteria[:favorite_color]
+      scope = scope.with_term(:favorite_color, criteria[:favorite_color])
+    end
+  end
+end
+
+# app/presenters/cvtheque_presenter.rb
+class CvthequePresenter
+  SEARCH_FIELDS = %i(
+    # ...
+    favorite_color
+  )
+
+  def color_options
+    StudentProfile::COLORS
+  end
+end
+
+# app/views/backend/cvtheque/_search.html.haml
+= f.input :favorite_color, as: :select, collection: cvtheque.color_options
+```
+
+---
+
+### Display it in the results
+
+```ruby
+# app/decorators/resume_decorator.rb
+class ResumeDecorator
+  def favorite_color
+    student.favorite_color.name
+  end
+end
+
+# app/views/cvtheque/_resume.html.haml
+%p= resume.favorite_color
+```
+
+        </script></section>
+
+      </div>
+
+    </div>
+
+    <script src="lib/reveal.js/lib/js/head.min.js"></script>
+    <script src="lib/reveal.js/js/reveal.min.js"></script>
+    <script src="lib/jquery/dist/jquery.min.js"></script>
+    <script src="config.js"></script>
+
+  </body>
+</html>

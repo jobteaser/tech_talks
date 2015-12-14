@@ -1,0 +1,389 @@
+<!doctype html>
+<html lang="en">
+
+  <head>
+    <meta charset="utf-8">
+
+    <title>cockpit</title>
+
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+    <link rel="stylesheet" href="lib/reveal.js/css/reveal.min.css">
+    <link rel="stylesheet" href="lib/reveal.js/css/theme/night.css">
+    <link rel="stylesheet" href="lib/template.css">
+
+    <!-- For syntax highlighting -->
+    <link rel="stylesheet" href="lib/reveal.js/lib/css/zenburn.css">
+
+    <!-- If the query includes 'print-pdf', include the PDF print sheet -->
+    <script>
+      if( window.location.search.match( /print-pdf/gi ) ) {
+        var link = document.createElement( 'link' );
+        link.rel = 'stylesheet';
+        link.type = 'text/css';
+        link.href = 'css/print/pdf.css';
+        document.getElementsByTagName( 'head' )[0].appendChild( link );
+      }
+    </script>
+
+    <!--[if lt IE 9]>
+    <script src="lib/reveal.js/lib/js/html5shiv.js"></script>
+    <![endif]-->
+  </head>
+
+  <body>
+    <div class="reveal">
+      <div class="slides" id="content">
+        <section data-markdown
+                 data-separator="==="
+                 data-vertical="---"><script type="text/template">
+
+# cockpit
+
+===
+
+## Produit
+
+---
+
+### Faciliter la relation écoles pour les entreprises
+
+---
+
+### Utilisateurs
+
+* Responsables relation école
+
+* Campus managers
+
+* Responsables relation entreprise
+
+---
+
+### Problèmatiques
+
+* Organisation compliquée
+
+* Infos sur les écoles non à jours
+
+* Outils archaiques
+
+* Manque de visiblité sur relations écoles
+
+---
+
+### Modules
+
+* Annuaire des écoles
+
+* Pilotage des actions / partenariats
+
+* BI et bilans
+
+---
+
+### Annuaire des écoles
+
+* Infos publiques mises à jour
+
+* Calendrier des stages
+
+* Infos sur les formations
+
+* Contacts
+
+---
+
+### Pilotage des actions
+
+* Suivi des action en cours
+
+* Remontées à posteriori
+
+* Collecte de feedbacks
+
+* Base de contacts
+
+---
+
+### Bilans et BI
+
+* Rentabilité des relations écoles
+
+* Taux de conversion en recrutement
+
+* Optimisations via JT
+
+===
+
+## Process
+
+---
+
+### Synergie campus
+
+10 clients historiques en pilote
+
+---
+
+Livraison tous les mois de janvier à avril
+
+---
+
+### 5 lots
+
+1. Pilotage actions
+
+2. Feedbacks
+
+3. Bilans écoles
+
+4. Annuaire
+
+5. Finalisation
+
+===
+
+## Stack
+
+---
+
+### Backend
+
+* Rails 4.2
+
+* Sidekiq
+
+* Redis
+
+* PostgreSQL
+
+---
+
+### Frontend
+
+* Limitless (londinium 2015)
+
+* SCSS
+
+* Slim
+
+* ES2015
+
+* Gulp
+
+---
+
+### Services
+
+* Sendgrid
+
+* Heroku
+
+* Cloudinary ?
+
+---
+
+### Monitoring / other
+
+* NewRelic
+
+* CircleCI
+
+* Github
+
+* Sentry ?
+
+===
+
+## What's in it
+
+===
+
+## Code patterns
+
+---
+
+### Thin controllers, dumb model, dumb views
+
+---
+
+### Sandi's rules
+
+* Methods can be no longer than five lines of code.
+
+* Controllers can instantiate only one object
+
+---
+
+### Other patterns
+
+* Presenters and form objects for **display** logic
+
+* Interactors for **business** logic
+
+<br>
+
+Both being **fully** tested of course
+
+---
+
+### Interactors ?
+
+Basically, service objects with some syntaxic sugar
+
+<br>
+
+[github.com/collectiveidea/interactor](github.com/collectiveidea/interactor)
+
+---
+
+```ruby
+# app/interactors/authenticate_user.rb
+class AuthenticateUser
+  include Interactor
+
+  def call
+    if user = User.authenticate(context.email, context.password)
+      context.user = user
+      context.token = user.secret_token
+    else
+      context.fail!(message: "authenticate_user.failure")
+    end
+  end
+end
+```
+
+---
+
+```ruby
+class SessionsController < ApplicationController
+  def create
+    result = AuthenticateUser.call(params[:session])
+
+    if result.success?
+      session[:user_token] = result.token
+      redirect_to root_path
+    else
+      flash.now[:message] = t(result.message)
+      render :new
+    end
+  end
+end
+```
+
+---
+
+Also got around hooks, chaining, and rollbacks ...
+
+===
+
+## Deployment
+
+---
+
+### Heroku pipelines (Github integration)
+
+---
+
+* Green builds from master are auto deployed to staging / preprod
+
+* Auto feature branches for PRs
+
+* Staging promoted to production manually
+
+---
+
+### Cons
+
+* No auto migrations yet (still beta)
+
+===
+
+## Assets
+
+---
+
+### Gulp instead of sprockets
+
+* Faster
+
+* More maintained
+
+* Allow ES2015 with babel
+
+* Watchers in `bin/server`
+
+---
+
+* Automatically built on deploy
+
+* Right now : served by the app
+
+* In the future : S3 + cloudfront upload
+
+---
+
+### JS stack
+
+* Right now : jQuery / lodash / plugins
+
+* **To decide yet**
+
+===
+
+## Other
+
+---
+
+### Seeds
+
+* Full seeding via `./bin/setup` (FactoryGirl + Faker)
+
+* Regularily done on staging
+
+* Auto smoke suite ?
+
+---
+
+### Links
+
+* [jt-cockpit-staging.herokuapp.com](https://jt-cockpit-staging.herokuapp.com)
+
+* [github.com/jobteaser/cockpit](https://github.com/jobteaser/cockpit)
+
+===
+
+## What next ?
+
+---
+
+* First shipping 06/01
+
+* 1 shipping every month afterwards
+
+* Need **review**
+
+* Need **ownership sharing**
+
+<br><br>
+
+<small>Please be gentle</small>
+
+
+        </script></section>
+
+      </div>
+
+    </div>
+
+    <script src="lib/reveal.js/lib/js/head.min.js"></script>
+    <script src="lib/reveal.js/js/reveal.min.js"></script>
+    <script src="lib/jquery/dist/jquery.min.js"></script>
+    <script src="config.js"></script>
+
+  </body>
+</html>

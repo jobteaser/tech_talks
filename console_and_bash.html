@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+
+  <head>
+    <meta charset="utf-8">
+
+    <title>Console and bash tricks</title>
+
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+    <link rel="stylesheet" href="lib/reveal.js/css/reveal.min.css">
+    <link rel="stylesheet" href="lib/reveal.js/css/theme/night.css">
+    <link rel="stylesheet" href="lib/template.css">
+
+    <!-- For syntax highlighting -->
+    <link rel="stylesheet" href="lib/reveal.js/lib/css/zenburn.css">
+
+    <!-- If the query includes 'print-pdf', include the PDF print sheet -->
+    <script>
+      if( window.location.search.match( /print-pdf/gi ) ) {
+        var link = document.createElement( 'link' );
+        link.rel = 'stylesheet';
+        link.type = 'text/css';
+        link.href = 'css/print/pdf.css';
+        document.getElementsByTagName( 'head' )[0].appendChild( link );
+      }
+    </script>
+
+    <!--[if lt IE 9]>
+    <script src="lib/reveal.js/lib/js/html5shiv.js"></script>
+    <![endif]-->
+  </head>
+
+  <body>
+    <div class="reveal">
+      <div class="slides" id="content">
+        <section data-markdown  
+                 data-separator="==="
+                 data-vertical="---"><script type="text/template">
+
+# The ultimate complete guide to console and bash tricks
+
+Just kidding, only a few of them, feel free to add yours ☺
+
+===
+
+## Disclaimer
+
+I don't know if all of these will work on your machine, but eh, feel free to try them.
+
+===
+
+## The Tricks
+
+---
+
+### Chaining commands
+
+```bash
+# Executes commands foo, then bar
+# Bar is executed only if the return code of foo is 0
+foo && bar
+```
+
+---
+
+### Moving through the directories
+
+```bash
+cd   # Goes to your home directory
+cd - # Goes to the previous directory (back and forth)
+pwd  # Shows the current path
+```
+
+---
+
+### Manipulating the current line
+
+All of these copy the removed content to a special buffer
+
+```bash
+Ctrl + k # Cut from your current position to the end of the line
+Ctrl + u # Cut from your position to the begining of the line
+Ctrl + w # Cut the previous word (from your position)
+Ctrl + y # Paste the content of the special buffer at your current position
+```
+---
+
+### History
+
+```bash
+history            # Shows all your command history
+history | grep foo # The same, but filters on foo (duh)
+Ctrl + r           # Allows you to search in your history
+```
+
+---
+
+### Expansions
+
+```bash
+* # Equivalent of naming all the elements in the current directory
+```
+
+```bash
+# Expands the current argument with a second argument with foo
+# substituted for bar
+{foo,bar} 
+
+# Ex. This will expand to `mv hlelo.txt hello.txt`
+mv h{le,el}lo.txt 
+```
+
+---
+
+### Subsitutions
+
+```bash
+!!       # Will be substituted by your previous command
+!$       # Same with the last non command item
+!^       # Same with the first non command item
+!*       # Same with all non command items
+```
+```bash
+^foo^bar # Will run the whole previous command with foo substituted for bar
+```
+
+===
+
+## Bonus
+
+---
+
+### I don't know how to name this one
+
+```bash
+Esc,. # Inserts the last element of your previous comment at the current position
+```
+
+---
+
+### Ruby console
+
+Add whatever ruby code you which to your ```.pryrc``` file (in the application directory).
+The code will be loaded with your console.
+
+```ruby
+puts "Loading #{__FILE__}"
+def me
+  @_me ||= User.where(email: 'benoit.dinocourt@jobteaser.com').first
+end
+
+```
+        </script></section>
+
+      </div>
+
+    </div>
+
+    <script src="lib/reveal.js/lib/js/head.min.js"></script>
+    <script src="lib/reveal.js/js/reveal.min.js"></script>
+    <script src="lib/jquery/dist/jquery.min.js"></script>
+    <script src="config.js"></script>
+
+  </body>
+</html>

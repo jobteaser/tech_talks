@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+
+  <head>
+    <meta charset="utf-8">
+
+    <title>Introspection w/ Ruby</title>
+
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+    <link rel="stylesheet" href="lib/reveal.js/css/reveal.min.css">
+    <link rel="stylesheet" href="lib/reveal.js/css/theme/night.css">
+    <link rel="stylesheet" href="lib/template.css">
+
+    <!-- For syntax highlighting -->
+    <link rel="stylesheet" href="lib/reveal.js/lib/css/zenburn.css">
+
+    <!-- If the query includes 'print-pdf', include the PDF print sheet -->
+    <script>
+      if( window.location.search.match( /print-pdf/gi ) ) {
+        var link = document.createElement( 'link' );
+        link.rel = 'stylesheet';
+        link.type = 'text/css';
+        link.href = 'css/print/pdf.css';
+        document.getElementsByTagName( 'head' )[0].appendChild( link );
+      }
+    </script>
+
+    <!--[if lt IE 9]>
+    <script src="lib/reveal.js/lib/js/html5shiv.js"></script>
+    <![endif]-->
+  </head>
+
+  <body>
+    <div class="reveal">
+      <div class="slides" id="content">
+        <section data-markdown  
+                 data-separator="==="
+                 data-vertical="---"><script type="text/template">
+
+# Introspection w/ Ruby
+
+===
+
+## Methods
+
+```ruby
+  obj.respond_to?(:method_name)
+```
+
+---
+
+### Methods of an object
+
+```ruby
+  obj.methods
+  obj.methods - Object.methods
+  obj.methods.grep /to_/
+
+  Klass.instance_methods
+```
+
+---
+
+### The Method object
+
+```ruby
+  'foo'.method(:to_s) #=> #<Method: String#to_s>
+  Method#owner #=> Class
+  Method#source_location #=> File and line number
+```
+
+===
+
+## Variables
+
+```ruby
+  Klass.class_variables
+  obj.instance_variables
+```
+
+---
+
+### Instance variables
+
+```ruby
+  obj.instance_variable_get(:@var_name)
+  obj.instance_variable_set(:@var_name, val)
+
+```
+
+---
+
+### defined?
+
+```ruby
+  defined?(CONST_NAME) # 'constant' or nil
+  defined?(var_name) # 'local-variable' or nil
+  defined?(@var_name) # 'instance-variable' or nil
+  defined?(method_name) # 'method' or nil
+```
+
+===
+
+## Traversing classes
+
+```ruby
+  obj.is_a?(Klass)
+
+```
+
+---
+
+### Ancestors
+
+```ruby
+  obj.kind_of?(Klass)
+  # => true is obj is a Klass or has Klass as an ancestor
+
+  Klass.ancestors
+
+  # Return all the descendants of a class
+  ObjectSpace.each_object(Klass).select { |klass| klass < self }
+
+```
+
+---
+
+### Modules
+
+```ruby
+  Klass.included_modules
+```
+        </script></section>
+
+      </div>
+
+    </div>
+
+    <script src="lib/reveal.js/lib/js/head.min.js"></script>
+    <script src="lib/reveal.js/js/reveal.min.js"></script>
+    <script src="lib/jquery/dist/jquery.min.js"></script>
+    <script src="config.js"></script>
+
+  </body>
+</html>

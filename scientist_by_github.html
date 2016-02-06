@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+
+  <head>
+    <meta charset="utf-8">
+
+    <title>Scientist by Github</title>
+
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+    <link rel="stylesheet" href="lib/reveal.js/css/reveal.min.css">
+    <link rel="stylesheet" href="lib/reveal.js/css/theme/night.css">
+    <link rel="stylesheet" href="lib/template.css">
+
+    <!-- For syntax highlighting -->
+    <link rel="stylesheet" href="lib/reveal.js/lib/css/zenburn.css">
+
+    <!-- If the query includes 'print-pdf', include the PDF print sheet -->
+    <script>
+      if( window.location.search.match( /print-pdf/gi ) ) {
+        var link = document.createElement( 'link' );
+        link.rel = 'stylesheet';
+        link.type = 'text/css';
+        link.href = 'css/print/pdf.css';
+        document.getElementsByTagName( 'head' )[0].appendChild( link );
+      }
+    </script>
+
+    <!--[if lt IE 9]>
+    <script src="lib/reveal.js/lib/js/html5shiv.js"></script>
+    <![endif]-->
+  </head>
+
+  <body>
+    <div class="reveal">
+      <div class="slides" id="content">
+        <section data-markdown
+                 data-separator="==="
+                 data-vertical="---"><script type="text/template">
+
+# Scientist by Github
+
+#### A Ruby library for carefully refactoring critical paths.
+
+
+===
+
+## What is it?
+
+---
+
+### Science!
+
+```ruby
+class MyWidget
+  include Scientist
+
+  def users
+    science "users" do |e|
+      e.use { User.all }
+      e.try { UserService.list }
+    end
+  end
+end
+```
+
+===
+
+## What for?
+
+---
+
+### Field experiement (or not)
+
+```ruby
+class MyExperiment
+  include Scientist::Experiment
+  # ... implementation
+end
+
+MyExperiment.raise_on_mismatches = true
+```
+
+===
+
+## But what for?
+
+---
+
+### Publish results
+```ruby
+class MyExperiment < ActiveRecord::Base
+  include Scientist::Experiment
+
+  def publish(result)
+    # Store the timing for the control value,
+    $statsd.timing "science.#{name}.control", result.control.duration
+    # for the candidate
+    $statsd.timing "science.#{name}.candidate", result.candidates.first.duration
+
+    # and counts for match/ignore/mismatch:
+    if result.matched?
+      $statsd.increment "science.#{name}.matched"
+    elsif result.ignored?
+      $statsd.increment "science.#{name}.ignored"
+    else
+      $statsd.increment "science.#{name}.mismatched"
+      # Finally, store mismatches wherever you want
+      store_mismatch_data(result)
+    end
+  end
+end
+```
+
+===
+
+## Interesting, what can I do?
+
+---
+
+### Enable/Disable/Ramping experiments
+
+```ruby
+class DashboardController
+  include Scientist
+
+  def dashboard_items
+    science "dashboard-items" do |e|
+      # only run this experiment for staff members
+      e.run_if { current_user.staff? }
+      # ...
+  end
+end
+```
+```ruby
+class MyExperiment < ActiveRecord::Base
+  include Scientist::Experiment
+  def enabled?
+    percent_enabled > 0 && rand(100) < percent_enabled
+  end
+end
+```
+
+---
+
+### Try more than one thing
+
+```ruby
+require "scientist"
+
+class MyWidget
+  include Scientist
+
+  def allows?(user)
+    science "widget-permissions" do |e|
+      e.use { model.check_user(user).valid? } # old way
+
+      e.try("api") { user.can?(:read, model) } # new service API
+      e.try("raw-sql") { user.can_sql?(:read, model) } # raw query
+    end
+  end
+end
+```
+
+---
+
+### Only try
+
+```ruby
+science "various-ways", run: "first-way" do |e|
+  e.try("first-way")  { ... }
+  e.try("second-way") { ... }
+end
+```
+
+===
+
+## Thanks
+#### All examples are from Github's Scientist repository
+[Check it out](https://github.com/github/scientist)
+
+        </script></section>
+
+      </div>
+
+    </div>
+
+    <script src="lib/reveal.js/lib/js/head.min.js"></script>
+    <script src="lib/reveal.js/js/reveal.min.js"></script>
+    <script src="lib/jquery/dist/jquery.min.js"></script>
+    <script src="config.js"></script>
+
+  </body>
+</html>

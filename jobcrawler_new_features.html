@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="en">
+
+  <head>
+    <meta charset="utf-8">
+
+    <title>jobcrawler_new_features</title>
+
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+    <link rel="stylesheet" href="lib/reveal.js/css/reveal.min.css">
+    <link rel="stylesheet" href="lib/reveal.js/css/theme/night.css">
+    <link rel="stylesheet" href="lib/template.css">
+
+    <!-- For syntax highlighting -->
+    <link rel="stylesheet" href="lib/reveal.js/lib/css/zenburn.css">
+
+    <!-- If the query includes 'print-pdf', include the PDF print sheet -->
+    <script>
+      if( window.location.search.match( /print-pdf/gi ) ) {
+        var link = document.createElement( 'link' );
+        link.rel = 'stylesheet';
+        link.type = 'text/css';
+        link.href = 'css/print/pdf.css';
+        document.getElementsByTagName( 'head' )[0].appendChild( link );
+      }
+    </script>
+
+
+    <!--[if lt IE 9]>
+    <script src="lib/reveal.js/lib/js/html5shiv.js"></script>
+    <![endif]-->
+
+  </head>
+
+  <body>
+    <div class="reveal">
+      <div class="slides" id="content">
+        <section data-markdown  
+                 data-separator="==="
+                 data-vertical="---"><script type="text/template">
+
+# Jobcrawler Release
+## New features
+
+===
+
+# Login
+
+![Login](./jobcrawler_new_features/login.png)
+
+git branch: `authentication-master`
+
+===
+
+## Authentication - User
+
+- Only on `CrawlerApp`
+- Redirect to **/login** if user is not logged
+- New model: `User`
+```ruby
+name:     string
+password: string # will be encrypted when CREATED or UPDATED
+```
+- User creation:
+```ruby
+$ scripts/console
+$ User.create(name: 'yourname', password: 'yourpassword')
+```
+- Password change:
+```ruby
+$ User.find_by(name: 'yourname').update(password: 'newpassword')
+```
+
+---
+
+### How?
+
+- Using `Rack::Session` in Sinatra
+- Current user session (if logged)
+
+```ruby
+# lib/authentication.rb
+
+# Get if the user is logged
+def authenticated?
+  session.has_key?('user')
+end
+
+# Add user-related keys to the session
+def login(user)
+  session['user'] = { 'id' => user.id, 'name' => user.name }
+end
+
+# Delete all user-related keys from the session
+def logout
+  session.delete('user')
+end
+```
+
+```ruby
+session['user']
+#=> { 'id' =>  1, 'name' => 'toto' }
+```
+
+===
+
+## Authentication - Token
+
+- New model: `Token`
+```ruby
+str_id:  string  # raw 32-sized random [0-9a-z] token string
+user_id: integer # user associated with this token
+```
+- Check *Remember me* when login
+- Store the token as a cookie
+
+---
+
+### How?
+
+- using `Rack::Session::Cookie` in Sinatra
+- A new Token will be generated if *Remember me* was checked during login
+- Next connection, if no session exists, check if a token is associated to a user and login automatically
+
+---
+
+### But...
+
+- `session` is already stored as a cookie
+- The token is stored in `session`, like the user session
+- Token implementation useless?
+
+===
+
+# Enable/Disable crawler button
+
+![Enable](./jobcrawler_new_features/button_enable.png)
+![Disable](./jobcrawler_new_features/button_disable.png)
+
+git branch: `feature-disable-crawler`
+
+![List](./jobcrawler_new_features/disabled_list.png)
+
+
+===
+
+## Enable/Disable crawler button
+
+- Click the _Enable/Disable crawler_ button to enable/disable a crawler
+- Disabled crawlers will not be added to the `ScrappingQueue` when the `CrawlerTask` is executed
+
+---
+
+### How?
+
+- Edited `CrawlerConf` model:
+```ruby
+company_id: string
+unbridled:  boolean
+enabled:    boolean # new column
+```
+- The button toggle the `enabled` field value.
+- The task only enqueue enabled crawlers
+
+```ruby
+# lib/scheduler/crawler_task.rb
+
+crawlers.each do |crawler|
+  conf = CrawlerConf.find_by(company_id: crawler)
+  enabled = conf.nil? ? true : conf.enabled
+  Resque.enqueue(ScrappingJob, crawler) if enabled
+end
+```
+
+===
+
+# Mailer
+
+![Email](./jobcrawler_new_features/email.png)
+
+git branch: `crawler-mailer`
+
+===
+
+## Mailer
+
+- New task/job: `Mailer`
+```ruby
+lib/jobs/mailer_job.rb
+lib/scheduler/mailer_task.rb # MailerTask.start
+lib/tasks/mailer.rake        # rake mailer:start
+```
+- Scheduled every day at 2:00pm
+- Send a mail with all 'outdated' crawlers (i.e. if the most recent offer crawled by the crawler is older than 2 days)
+- To **dev@jobteaser.com** from **jobcrawler@jobteaser.com**
+- Configurable
+  - `config/mailer/mailer.rb`
+  - `config/mailer/mail_template.haml`
+
+---
+
+### How?
+
+- Using Sendgrid API
+
+```ruby
+# lib/mailer.rb
+
+sendgrid = SendGrid::Client.new(api_key: API_KEY)
+
+email = SendGrid::Email.new do |m|
+  m.from    = EMAIL_FROM
+  m.to      = EMAIL_TO
+  m.subject = EMAIL_SUBJECT
+  m.html    = Haml::Engine.new(File.read('./config/mailer/mail_template.haml')).render
+end
+```
+```ruby
+# in the job
+sendgrid.send(email)
+```
+
+- Generate email based on a haml template `config/mailer/mail_template.haml`
+
+===
+
+# Crawlers
+
+git branches:
+
+- `fix-amadeus-crawler`
+
+- `fix-groupe-michelin-crawler`
+
+- `fix-mars-crawler`
+
+- `add-mondelez_english-crawler`
+
+- `jt-3622-new-crawler-cstb`
+
+- `fix-groupe_bel-crawler`
+
+- `fix-keolis-crawler`
+
+===
+
+## Crawlers
+### Fixed crawlers
+- `amadeus`
+- `groupe-michelin`
+- `mars`
+- `groupe-bel`
+- `keolis`
+
+### Added crawlers
+- `cstb` [JT-3622]
+- `mondelez-english` (for mondelez-international)
+
+===
+
+# End
+
+        </script></section>
+
+      </div>
+
+    </div>
+
+    <script src="lib/reveal.js/lib/js/head.min.js"></script>
+    <script src="lib/reveal.js/js/reveal.min.js"></script>
+    <script src="lib/jquery/dist/jquery.min.js"></script>
+    <script src="config.js"></script>
+
+  </body>
+</html>

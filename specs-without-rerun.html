@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en">
+
+  <head>
+    <meta charset="utf-8">
+
+    <title>Specs without rerun</title>
+
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+    <link rel="stylesheet" href="lib/reveal.js/css/reveal.min.css">
+    <link rel="stylesheet" href="lib/reveal.js/css/theme/night.css">
+    <link rel="stylesheet" href="lib/template.css">
+
+    <!-- For syntax highlighting -->
+    <link rel="stylesheet" href="lib/reveal.js/lib/css/zenburn.css">
+
+    <!-- If the query includes 'print-pdf', include the PDF print sheet -->
+    <script>
+      if( window.location.search.match( /print-pdf/gi ) ) {
+        var link = document.createElement( 'link' );
+        link.rel = 'stylesheet';
+        link.type = 'text/css';
+        link.href = 'css/print/pdf.css';
+        document.getElementsByTagName( 'head' )[0].appendChild( link );
+      }
+    </script>
+
+    <!--[if lt IE 9]>
+    <script src="lib/reveal.js/lib/js/html5shiv.js"></script>
+    <![endif]-->
+  </head>
+
+  <body>
+    <div class="reveal">
+      <div class="slides" id="content">
+        <section data-markdown  
+                 data-separator="==="
+                 data-vertical="---"><script type="text/template">
+
+# Specs without rerun
+
+How to write (slightly more) bullet-proof specs
+
+===
+
+## Your examples are not alone
+
+---
+### Your ids will change
+
+* Even when using transactions, the ids will be incremented in the dabase
+* Don't expect your ids to be the same if several other examples have occured before
+
+```ruby
+# Bad
+expect(payload[:company_id]).to eq 1 # => Will work when running the file alone
+
+# Good
+expect(payload[:company_id]).to eq company.id
+```
+
+---
+
+### Defining classes in a spec file
+
+* Prefer anonymous classes for testing purposes
+* By doing so, you will avoid any name colision
+
+```ruby
+# Bad (if the name of the class is used in another spec file)
+class TestClass
+  ...
+end
+
+TestClass.new
+
+# Good
+klass = Class.new do
+end
+
+instance = klass.new
+```
+
+---
+
+### Disable caching for Rails.cache.fetch
+
+* `Rails.cache.fetch` just ignores the configuration of the cache except for the cache store
+* This has been fixed and should not happen again
+
+```ruby
+# In config/environments/test.rb
+config.cache_store = [:null_store]
+```
+===
+
+## Database and indexes
+
+---
+### RSpec Hooks
+
+* The `before(:all)` and `after(:all)` hooks are not in a database transaction
+* This means everything created in them will be persisted to the next spec
+* You have to remove these records manually
+
+```ruby
+# Bad
+before(:all) do
+  @job_offer = FactoryGirl.create(:job_offer)
+end
+
+# Good
+before(:all) do
+  @job_offer = FactoryGirl.create(:job_offer)
+end
+
+after(:all) do
+  @job_offer.destroy # Will clean the ES index
+end
+
+# Good
+before(:all) do
+  @job_offer = FactoryGirl.create(:job_offer)
+end
+
+after(:all) do
+  after_all_cleanup # Reset all the MySQL database but doesn't touch the ES index
+end
+```
+
+---
+
+### Transactions around examples
+
+* Another danger of using the `:all` hooks is that the object you test may be altered between two examples
+* Make sure to use `ActiveRecord::Base#reload` before each example
+* The transaction around the example will reset the object to its initial state
+* Be on the look for memoized methods, they will not be reset when using `reload`
+
+```ruby
+before(:all) do
+  @job_offer = FactoryGirl.create(:job_offer, active: true)
+end
+
+after(:all) { ... }
+
+before(:each) { @job_offer.reload } # Without this line the examples will fail randomly
+
+it ... do
+  @job_offer.active = false
+  ...
+end
+
+it ... do
+  expect(@job_offer).active.to be true
+end
+
+```
+---
+
+### Don't use sleep when waiting for an index to be ready
+
+```ruby
+# Bad
+JobOffer.create(...)
+sleep 0.5 # Not sure that the index will be ready even after waiting for 0.5 seconds
+JobOffer.search(...)
+
+# Good
+JobOffer.create(...)
+JobOffer.index.refresh
+JobOffer.search(...)
+```
+        </script></section>
+
+      </div>
+
+    </div>
+
+    <script src="lib/reveal.js/lib/js/head.min.js"></script>
+    <script src="lib/reveal.js/js/reveal.min.js"></script>
+    <script src="lib/jquery/dist/jquery.min.js"></script>
+    <script src="config.js"></script>
+
+  </body>
+</html>

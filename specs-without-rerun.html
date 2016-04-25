@@ -175,6 +175,102 @@ JobOffer.create(...)
 JobOffer.index.refresh
 JobOffer.search(...)
 ```
+
+===
+
+## Case study
+
+---
+
+### Symptoms
+
+* A bunch of examples from the API controller are failing
+* No error is raised, the expected results just aren't met
+* The output is different for each example
+* The special error handling of the API controller makes it difficult to find where the current data is different than the expected data
+
+---
+
+### The hunt part 1
+
+* Method 1 - Wild guess: fail
+* Method 2 - Breakpoint: fail (either it isn't reached at all or I just cannot figure what is wrong)
+* At this point, it would have been a good idea to check if some examples were easier to debug than others, but having no idea they were linked together, I started with the first one
+* I try to add a breakpoint earlier in the example, but it sends me through the whole Rails stack so I cannot reach our code
+
+-
+
+The methods I use 99% of the time will not be enough
+
+---
+
+### The hunt part 2
+
+* In the middle of the stack, I have the idea to put a breakpoint in the controller to check something
+* Since the controller has already been loaded, I'm forced to reload the file after adding the breakpoint
+* Magic: After that, all the examples are running fine (!)
+
+-
+
+Reloading the code of the controller before running the example fixes the issue
+
+--- 
+
+### The hunt part 3
+
+```ruby
+Api::JobNetwork::V1::JobOffersController.new.methods.sort.each do |m|
+  mapping[m] = instance.method(m).source_location.try(:join, ':')
+end
+```
+
+* I run to the breakpoint again and use this snippet to find the differences in the code before and after reloading the controller
+* There is indeed a difference: a callback is missing, but it refers to a dynamicaly generated method name, so no luck finding which one
+* Let's search the code for any occurence of the `Api::JobNetwork::V1::JobOffersController`, nothing catches my eye
+* Add a listener on every call of `require` to find in which file did the code change, but there is too much noise and I see nothing
+
+-
+
+I know the code has changed, but cannot find what has been changed or when it has been changed
+
+---
+
+### The hunt part 4
+
+* Bring out the big guns: `Tracer`
+* Start a tracer at the beginning of the example (and stop it at the end)
+* Wasn't fond of this at first, because I thought it was going to be painful, but worked like a charm
+
+```ruby
+  Tracer.on
+  Tracer.add_filter do |event, file, line, id, binding, klass, *rest|
+    file =~ %r{/app/}
+  end
+  
+  # Run the example
+
+  Tracer.off
+```
+
+* By reading the trace, I see I'm in a place I'm not supposed to be (there is a nil variable, and a before filter is supposed to enforce a non-nil variable)
+* A quick search on this before filter leads me to this:
+
+```ruby
+described_class.skip_before_filter :authenticate_api_job_offers!
+```
+
+-
+
+Here's the culprit, the fix takes two more seconds.
+
+
+---
+
+### Lesson learned
+
+* Using the tracer isn't that much of a hassle, and can save a whole lot of time
+* Make sure to never alter the code of the application from your examples
+
         </script></section>
 
       </div>

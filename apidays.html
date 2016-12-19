@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="en">
+
+  <head>
+    <meta charset="utf-8">
+
+    <title>apidays</title>
+
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+    <link rel="stylesheet" href="lib/reveal.js/css/reveal.min.css">
+    <link rel="stylesheet" href="lib/reveal.js/css/theme/night.css">
+    <link rel="stylesheet" href="lib/template.css">
+
+    <!-- For syntax highlighting -->
+    <link rel="stylesheet" href="lib/reveal.js/lib/css/zenburn.css">
+
+    <!-- If the query includes 'print-pdf', include the PDF print sheet -->
+    <script>
+      if( window.location.search.match( /print-pdf/gi ) ) {
+        var link = document.createElement( 'link' );
+        link.rel = 'stylesheet';
+        link.type = 'text/css';
+        link.href = 'css/print/pdf.css';
+        document.getElementsByTagName( 'head' )[0].appendChild( link );
+      }
+    </script>
+
+    <!--[if lt IE 9]>
+    <script src="lib/reveal.js/lib/js/html5shiv.js"></script>
+    <![endif]-->
+  </head>
+
+  <body>
+    <div class="reveal">
+      <div class="slides" id="content">
+        <section data-markdown
+                 data-separator="==="
+                 data-vertical="---"><script type="text/template">
+
+## ApiDays Paris 2016
+
+===
+
+## Security and Microservices is tough
+
+---
+
+### Standards
+
+- [SSL](https://letsencrypt.org/) for transport integrity / confidentiality
+
+- [JWS](https://jwt.io/) for message integrity
+
+- [JWE](http://hdknr.github.io/docs/identity/jwe.html) for message confidentiality
+
+- [OpenID Connect](http://openid.net/connect/) for authentication
+
+---
+
+### Other issues without a standard
+
+- Applicative permissions ?
+
+- DDoS protection ?
+
+- Persistent and secured transaction log for auditability ?
+
+---
+
+## Cheatsheet
+
+---
+
+![Should be bulletproof](./apidays/security.png)
+
+---
+
+[Full presentation](http://www.slideshare.net/isabellemauny/api-days-paris201642crunch)
+
+===
+
+## GraphQL is not hipster
+
+---
+
+### Best use cases
+
+- For internal APIs
+
+- For mobile networks
+
+- As an API Gateway behind microservices
+
+- With strong typing
+
+---
+
+### Caveats
+
+- ACLs (still) need to be handled manually
+
+- Caching needs to be done at the application level
+
+- Real-time is not solved yet
+
+---
+
+Tools and resources
+
+- [GraphiQL for exploration](https://github.com/graphql/graphiql)
+
+- [GraphQL weekly](https://graphqlweekly.com/)
+
+- [Apollo dev blog](https://dev-blog.apollodata.com/)
+
+===
+
+## Docker is still winning
+
+---
+
+### [Swarm mode](https://docs.docker.com/engine/swarm/) is awesome
+
+- Cluster handling
+
+- Scaling and Load balancing
+
+- Service discovery
+
+- Easiest setup by far (vs Nomad, Mesos & Kubernetes)
+
+---
+
+And it supports stackfiles
+
+```
+lb:
+  image: dockercloud/haproxy
+  links:
+    - web
+  ports:
+    - "80:80"
+  roles:
+    - global
+web:
+  image: dockercloud/quickstart-python
+  links:
+    - redis
+  target_num_containers: 4
+redis:
+  image: redis
+```
+
+---
+
+### Caveats
+
+- serverless still not well supported yet
+
+- no good secrets management solution (coming in 1.3)
+
+===
+
+## Use jenkins for continuous delivery
+
+---
+
+- Huge ecosystem
+
+- Can be of use for everyone (dev / PM / ops)
+
+- New version optimized for pipelines !
+
+---
+
+![Jenkins pipeline](./apidays/jenkins.png)
+
+===
+
+## Misc and cool stuff
+
+---
+
+API versioning with dates
+
+[Stripe changelog](https://stripe.com/docs/upgrades#api-changelog)
+
+---
+
+Also, awesome Stripe API docs, with REAL data
+
+![Stripe docs](./apidays/stripe.png)
+
+---
+
+Apparently bots are the future
+
+![Uber](./apidays/messenger_uber.png)
+
+---
+
+Use an outgoing proxy for external APIs, which stores securely API credentials in one place
+
+---
+
+GraphQL can enable automated compile-time API validation on mobile apps
+
+---
+
+[GoMix](https://gomix.com) is a cool gist / codepen / heroku app
+
+---
+
+[Runkit](https://runkit.com/) is like a Jupyter notebook with an endpoint for Node
+
+---
+
+[3Scale](https://www.3scale.net/) do API auth / security / monetization as a service with an nginx reverse proxy
+
+---
+
+Want to make a bot ?
+
+- [wit.ai](wit.ai)
+- [api.ai](api.ai)
+- [recast.ai](recast.ai)
+
+---
+
+Swagger is now called [OAS](https://github.com/OAI/OpenAPI-Specification), and id the de-facto standard for API documentations
+
+---
+
+[craft.ai](http://www.craft.ai/) do whitebox ML with decision trees, and have a free API
+
+===
+
+### Thx for the patience
+
+![otter](./apidays/otter.gif)
+
+        </script></section>
+
+      </div>
+
+    </div>
+
+    <script src="lib/reveal.js/lib/js/head.min.js"></script>
+    <script src="lib/reveal.js/js/reveal.min.js"></script>
+    <script src="lib/jquery/dist/jquery.min.js"></script>
+    <script src="config.js"></script>
+
+  </body>
+</html>

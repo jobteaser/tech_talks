@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+
+  <head>
+    <meta charset="utf-8">
+
+    <title>Gatling</title>
+
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+    <link rel="stylesheet" href="lib/reveal.js/css/reveal.min.css">
+    <link rel="stylesheet" href="lib/reveal.js/css/theme/night.css">
+    <link rel="stylesheet" href="lib/template.css">
+
+    <!-- For syntax highlighting -->
+    <link rel="stylesheet" href="lib/reveal.js/lib/css/zenburn.css">
+
+    <!-- If the query includes 'print-pdf', include the PDF print sheet -->
+    <script>
+      if( window.location.search.match( /print-pdf/gi ) ) {
+        var link = document.createElement( 'link' );
+        link.rel = 'stylesheet';
+        link.type = 'text/css';
+        link.href = 'css/print/pdf.css';
+        document.getElementsByTagName( 'head' )[0].appendChild( link );
+      }
+    </script>
+
+    <!--[if lt IE 9]>
+    <script src="lib/reveal.js/lib/js/html5shiv.js"></script>
+    <![endif]-->
+  </head>
+
+  <body>
+    <div class="reveal">
+      <div class="slides" id="content">
+        <section data-markdown
+                 data-separator="==="
+                 data-vertical="---"><script type="text/template">
+
+# Gatling
+
+===
+
+# The need
+
+---
+
+# Workshop - Destress & Gatling
+
+---
+
+# Workshop - Simulation
+
+---
+
+# Workshop - Scenario
+
+
+### Mix HTML and markdown
+
+ * HTML tags ! <strong>Hello</strong> <small>World</small>
+ * **Kittens!**
+
+<img src="http://placekitten.com/g/400/240"/>
+
+---
+
+### Syntax highlighting
+
+```ruby
+def initialize(app, options={})
+  @app = app
+  @urls = options[:urls] || ["/favicon.ico"]
+  @index = options[:index]
+  root = options[:root] || Dir.pwd
+
+  # HTTP Headers
+  @header_rules = options[:header_rules] || []
+  # Allow for legacy :cache_control option while prioritizing global header_rules setting
+  @header_rules.insert(0, [:all, {'Cache-Control' => options[:cache_control]}]) if options[:cache_control]
+
+  @file_server = Rack::File.new(root)
+end
+```
+
+        </script></section>
+
+      </div>
+
+    </div>
+
+    <script src="lib/reveal.js/lib/js/head.min.js"></script>
+    <script src="lib/reveal.js/js/reveal.min.js"></script>
+    <script src="lib/jquery/dist/jquery.min.js"></script>
+    <script src="config.js"></script>
+
+  </body>
+</html>
